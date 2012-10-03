@@ -10,10 +10,12 @@ var config = require('../lib/config.js');
 var index = require('../index');
 var log = require('../lib/log');
 
+/*
 process.on('uncaughtException', function(err) {
   log.error(err);
   process.exit(1);
 });
+*/
 
 var argv = optimist
     .default({
@@ -94,31 +96,11 @@ function executeCreate() {
 }
 
 function executeUp() {
-  if(!argv.count) {
-    argv.count = Number.MAX_VALUE;
-  }
-  index.connect(config.getCurrent().settings, function(err, migrator) {
-    assert.ifError(err);
-    migrator.migrationsDir = path.resolve(argv['migrations-dir']);
-    migrator.driver.createMigrationsTable(function(err) {
-      assert.ifError(err);
-      migrator.up(argv, onComplete.bind(this, migrator));
-    });
-  });
+  index.up(config.getCurrent().settings, argv['migrations-dir'], argv.destination, argv.count);
 }
 
 function executeDown() {
-  if(!argv.destination && !argv.count) {
-    argv.count = 1;
-  }
-  index.connect(config.getCurrent().settings, function(err, migrator) {
-    assert.ifError(err);
-    migrator.migrationsDir = path.resolve(argv['migrations-dir']);
-    migrator.driver.createMigrationsTable(function(err) {
-      assert.ifError(err);
-      migrator.down(argv, onComplete.bind(this, migrator));
-    });
-  });
+  index.down(config.getCurrent().settings, argv['migrations-dir'], argv.destination, argv.count);
 }
 
 function onComplete(migrator, err) {

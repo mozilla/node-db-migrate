@@ -1,5 +1,9 @@
+var assert = require('assert');
+var path = require('path');
+
 var driver = require('./lib/driver');
 var Migrator = require('./lib/migrator');
+var log = require('./lib/log');
 
 exports.dataType = require('./lib/data_type');
 exports.config = require('./lib/config');
@@ -16,5 +20,35 @@ exports.createMigration = function(title, migrationsDir, callback) {
   migration.write(function(err) {
     if (err) { callback(err); return; }
     callback(null, migration);
+  });
+};
+
+function onComplete(migrator, err) {
+  migrator.driver.close();
+  assert.ifError(err);
+  log.info('Done');
+}
+
+exports.up = function(config, migrationsDir, destination, count) {
+  count = (undefined === count) ? Number.MAX_VALUE : count;
+  exports.connect(config, function(err, migrator) {
+    assert.ifError(err);
+    migrator.migrationsDir = path.resolve(migrationsDir);
+    migrator.driver.createMigrationsTable(function(err) {
+      assert.ifError(err);
+      migrator.up({destination: destination, count: count}, onComplete.bind(this, migrator));
+    });
+  });
+};
+
+exports.down = function(config, migrationsDir, destination, count) {
+  count = (undefined === count) ? Number.MAX_VALUE : count;
+  exports.connect(config, function(err, migrator) {
+    assert.ifError(err);
+    migrator.migrationsDir = path.resolve(migrationsDir);
+    migrator.driver.createMigrationsTable(function(err) {
+      assert.ifError(err);
+      migrator.down({destination: destination, count: count}, onComplete.bind(this, migrator));
+    });
   });
 };
