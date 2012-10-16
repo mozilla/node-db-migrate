@@ -47,14 +47,15 @@ exports.up = function(config, migrationsDir, destination, count, cb) {
   });
 };
 
-exports.down = function(config, migrationsDir, destination, count) {
+exports.down = function(config, migrationsDir, destination, count, cb) {
   count = (undefined === count) ? Number.MAX_VALUE : count;
+  var closeConnection = (config.db) ? false : true;
   exports.connect(config, function(err, migrator) {
     assert.ifError(err);
     migrator.migrationsDir = path.resolve(migrationsDir);
     migrator.driver.createMigrationsTable(function(err) {
       assert.ifError(err);
-      migrator.down({destination: destination, count: count}, onComplete.bind(this, migrator));
+      migrator.down({destination: destination, count: count}, onComplete.bind(this, migrator, cb, closeConnection));
     });
   });
 };
