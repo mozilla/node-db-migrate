@@ -23,8 +23,10 @@ exports.createMigration = function(title, migrationsDir, callback) {
   });
 };
 
-function onComplete(migrator, cb, err) {
-  migrator.driver.close();
+function onComplete(migrator, cb, closeConnection, err) {
+  if(closeConnection) {
+    migrator.driver.close();
+  }
   assert.ifError(err);
   log.info('Done');
   if("function" === typeof cb) {
@@ -34,12 +36,13 @@ function onComplete(migrator, cb, err) {
 
 exports.up = function(config, migrationsDir, destination, count, cb) {
   count = (undefined === count) ? Number.MAX_VALUE : count;
+  var closeConnection = (config.db) ? false : true;
   exports.connect(config, function(err, migrator) {
     assert.ifError(err);
     migrator.migrationsDir = path.resolve(migrationsDir);
     migrator.driver.createMigrationsTable(function(err) {
       assert.ifError(err);
-      migrator.up({destination: destination, count: count}, onComplete.bind(this, migrator, cb));
+      migrator.up({destination: destination, count: count}, onComplete.bind(this, migrator, cb, closeConnection));
     });
   });
 };
